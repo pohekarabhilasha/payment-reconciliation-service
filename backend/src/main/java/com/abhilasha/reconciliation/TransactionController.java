@@ -53,4 +53,11 @@ public class TransactionController {
     public List<Transaction> getDiscrepancies() {
         return repository.findByStatus(TransactionStatus.DISCREPANCY);
     }
+
+    // Delete all transactions (for a fresh reconciliation run)
+    @DeleteMapping("/clear")
+    public String clearAll() {
+        repository.deleteAll();
+        return "All transactions cleared";
+    }
 }
