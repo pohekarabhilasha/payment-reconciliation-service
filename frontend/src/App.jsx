@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import './App.css'
 
+const API_URL = 'https://payment-reconciliation-service-y91x.onrender.com'
+
 function App() {
   const [token, setToken] = useState(null)
   const [loginForm, setLoginForm] = useState({ username: '', password: '' })
@@ -14,11 +16,10 @@ function App() {
   const [discrepancies, setDiscrepancies] = useState([])
   const [message, setMessage] = useState('')
 
-  // ---- LOGIN ----
   const handleLogin = async () => {
     setLoginError('')
     try {
-      const res = await fetch('http://localhost:8080/api/auth/login', {
+      const res = await fetch(`${API_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(loginForm)
@@ -40,14 +41,12 @@ function App() {
     setLoginForm({ username: '', password: '' })
   }
 
-  // Helper: headers with the token attached
   const authHeaders = () => ({ 'Authorization': `Bearer ${token}` })
 
-  // ---- FILE UPLOAD ----
   const uploadFile = (file, source) => {
     const formData = new FormData()
     formData.append('file', file)
-    return fetch(`http://localhost:8080/api/transactions/import?source=${source}`, {
+    return fetch(`${API_URL}/api/transactions/import?source=${source}`, {
       method: 'POST',
       headers: authHeaders(),
       body: formData
@@ -61,7 +60,7 @@ function App() {
     }
     setMessage('Uploading...')
     try {
-      await fetch('http://localhost:8080/api/transactions/clear', {
+      await fetch(`${API_URL}/api/transactions/clear`, {
         method: 'DELETE',
         headers: authHeaders()
       })
@@ -73,20 +72,19 @@ function App() {
     }
   }
 
-  // ---- RECONCILE ----
   const handleReconcile = async () => {
     setMessage('Running reconciliation...')
     try {
-      const res = await fetch('http://localhost:8080/api/reconciliation/run', {
+      const res = await fetch(`${API_URL}/api/reconciliation/run`, {
         method: 'POST',
         headers: authHeaders()
       })
       const summaryData = await res.json()
       setSummary(summaryData)
 
-      const m = await fetch('http://localhost:8080/api/transactions/matched', { headers: authHeaders() }).then(r => r.json())
-      const u = await fetch('http://localhost:8080/api/transactions/unmatched', { headers: authHeaders() }).then(r => r.json())
-      const d = await fetch('http://localhost:8080/api/transactions/discrepancies', { headers: authHeaders() }).then(r => r.json())
+      const m = await fetch(`${API_URL}/api/transactions/matched`, { headers: authHeaders() }).then(r => r.json())
+      const u = await fetch(`${API_URL}/api/transactions/unmatched`, { headers: authHeaders() }).then(r => r.json())
+      const d = await fetch(`${API_URL}/api/transactions/discrepancies`, { headers: authHeaders() }).then(r => r.json())
       setMatched(m)
       setUnmatched(u)
       setDiscrepancies(d)
@@ -124,7 +122,6 @@ function App() {
       </div>
   )
 
-  // ---- LOGIN SCREEN (shown when not logged in) ----
   if (!token) {
     return (
         <div style={{ padding: '2rem', fontFamily: 'sans-serif', maxWidth: '400px' }}>
@@ -150,7 +147,6 @@ function App() {
     )
   }
 
-  // ---- DASHBOARD (shown when logged in) ----
   return (
       <div style={{ padding: '2rem', fontFamily: 'sans-serif', maxWidth: '900px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
