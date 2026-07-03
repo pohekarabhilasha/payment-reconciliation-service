@@ -1,0 +1,10 @@
+package com.abhilasha.reconciliation;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import java.util.Optional;
+
+public interface UserRepository extends JpaRepository<User, Long> {
+
+    // Find a user by their username (needed for login)
+    Optional<User> findByUsername(String username);
+}

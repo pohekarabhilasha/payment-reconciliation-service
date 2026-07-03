@@ -2,6 +2,10 @@ import { useState } from 'react'
 import './App.css'
 
 function App() {
+  const [token, setToken] = useState(null)
+  const [loginForm, setLoginForm] = useState({ username: '', password: '' })
+  const [loginError, setLoginError] = useState('')
+
   const [internalFile, setInternalFile] = useState(null)
   const [bankFile, setBankFile] = useState(null)
   const [summary, setSummary] = useState(null)
@@ -10,18 +14,46 @@ function App() {
   const [discrepancies, setDiscrepancies] = useState([])
   const [message, setMessage] = useState('')
 
-  // Upload one CSV file to the backend
+  // ---- LOGIN ----
+  const handleLogin = async () => {
+    setLoginError('')
+    try {
+      const res = await fetch('http://localhost:8080/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(loginForm)
+      })
+      const data = await res.json()
+      if (data.token) {
+        setToken(data.token)
+      } else {
+        setLoginError(data.error || 'Login failed')
+      }
+    } catch (e) {
+      setLoginError('Login failed: ' + e.message)
+    }
+  }
+
+  const handleLogout = () => {
+    setToken(null)
+    setSummary(null)
+    setLoginForm({ username: '', password: '' })
+  }
+
+  // Helper: headers with the token attached
+  const authHeaders = () => ({ 'Authorization': `Bearer ${token}` })
+
+  // ---- FILE UPLOAD ----
   const uploadFile = (file, source) => {
     const formData = new FormData()
     formData.append('file', file)
-
     return fetch(`http://localhost:8080/api/transactions/import?source=${source}`, {
       method: 'POST',
+      headers: authHeaders(),
       body: formData
     }).then(res => res.text())
   }
 
-  // Handle uploading both files
   const handleUpload = async () => {
     if (!internalFile || !bankFile) {
       setMessage('Please select both files first')
@@ -29,9 +61,10 @@ function App() {
     }
     setMessage('Uploading...')
     try {
-      // Clear old data first so re-uploads don't create duplicates
-      await fetch('http://localhost:8080/api/transactions/clear', { method: 'DELETE' })
-
+      await fetch('http://localhost:8080/api/transactions/clear', {
+        method: 'DELETE',
+        headers: authHeaders()
+      })
       await uploadFile(internalFile, 'INTERNAL')
       await uploadFile(bankFile, 'BANK')
       setMessage('Both files uploaded successfully')
@@ -40,18 +73,20 @@ function App() {
     }
   }
 
-  // Run reconciliation and load all results
+  // ---- RECONCILE ----
   const handleReconcile = async () => {
     setMessage('Running reconciliation...')
     try {
-      const res = await fetch('http://localhost:8080/api/reconciliation/run', { method: 'POST' })
+      const res = await fetch('http://localhost:8080/api/reconciliation/run', {
+        method: 'POST',
+        headers: authHeaders()
+      })
       const summaryData = await res.json()
       setSummary(summaryData)
 
-      // Load the detailed results
-      const m = await fetch('http://localhost:8080/api/transactions/matched').then(r => r.json())
-      const u = await fetch('http://localhost:8080/api/transactions/unmatched').then(r => r.json())
-      const d = await fetch('http://localhost:8080/api/transactions/discrepancies').then(r => r.json())
+      const m = await fetch('http://localhost:8080/api/transactions/matched', { headers: authHeaders() }).then(r => r.json())
+      const u = await fetch('http://localhost:8080/api/transactions/unmatched', { headers: authHeaders() }).then(r => r.json())
+      const d = await fetch('http://localhost:8080/api/transactions/discrepancies', { headers: authHeaders() }).then(r => r.json())
       setMatched(m)
       setUnmatched(u)
       setDiscrepancies(d)
@@ -61,7 +96,6 @@ function App() {
     }
   }
 
-  // A reusable table for showing transactions
   const TransactionTable = ({ title, data }) => (
       <div style={{ marginTop: '1.5rem' }}>
         <h3>{title} ({data.length})</h3>
@@ -71,11 +105,7 @@ function App() {
             <table border="1" cellPadding="8" style={{ borderCollapse: 'collapse' }}>
               <thead>
               <tr>
-                <th>Source</th>
-                <th>Reference</th>
-                <th>Amount</th>
-                <th>Date</th>
-                <th>Description</th>
+                <th>Source</th><th>Reference</th><th>Amount</th><th>Date</th><th>Description</th>
               </tr>
               </thead>
               <tbody>
@@ -94,9 +124,39 @@ function App() {
       </div>
   )
 
+  // ---- LOGIN SCREEN (shown when not logged in) ----
+  if (!token) {
+    return (
+        <div style={{ padding: '2rem', fontFamily: 'sans-serif', maxWidth: '400px' }}>
+          <h1>Login</h1>
+          <div style={{ marginBottom: '0.5rem' }}>
+            <input
+                placeholder="Username"
+                value={loginForm.username}
+                onChange={e => setLoginForm({ ...loginForm, username: e.target.value })}
+            />
+          </div>
+          <div style={{ marginBottom: '0.5rem' }}>
+            <input
+                type="password"
+                placeholder="Password"
+                value={loginForm.password}
+                onChange={e => setLoginForm({ ...loginForm, password: e.target.value })}
+            />
+          </div>
+          <button onClick={handleLogin}>Log In</button>
+          {loginError && <p style={{ color: 'red' }}>{loginError}</p>}
+        </div>
+    )
+  }
+
+  // ---- DASHBOARD (shown when logged in) ----
   return (
       <div style={{ padding: '2rem', fontFamily: 'sans-serif', maxWidth: '900px' }}>
-        <h1>Payment Reconciliation Service</h1>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h1>Payment Reconciliation Service</h1>
+          <button onClick={handleLogout}>Log Out</button>
+        </div>
 
         <div style={{ marginBottom: '1rem' }}>
           <h3>1. Upload Files</h3>
