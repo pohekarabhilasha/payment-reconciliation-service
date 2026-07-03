@@ -13,7 +13,7 @@ A full-stack payment reconciliation system that matches transactions between int
 
 **App:** https://payment-reconciliation-service.vercel.app
 
-**Demo login** — username: `demo` · password: `demo123`
+**Demo login** - username: `demo` · password: `demo123`
 
 ![Screenshot](Screenshot.jpg)
 
@@ -25,9 +25,9 @@ A full-stack payment reconciliation system that matches transactions between int
 Reconciliation is the back-office process of confirming that a company's own record of transactions matches what actually settled at the bank. This service ingests two sets of transactions (internal records and a bank statement), matches them, and surfaces anything that doesn't line up.
 
 It handles the three real outcomes of reconciliation:
-- **Matched** — same reference and amount on both sides
-- **Discrepancy** — same reference but a different amount (a genuine red flag)
-- **Unmatched** — a transaction that exists on only one side (missing on the other)
+- **Matched** - same reference and amount on both sides
+- **Discrepancy** - same reference but a different amount (a genuine red flag)
+- **Unmatched** - a transaction that exists on only one side (missing on the other)
 
 ## Features
 
