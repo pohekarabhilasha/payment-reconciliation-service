@@ -15,6 +15,9 @@ A full-stack payment reconciliation system that matches transactions between int
 
 **Demo login** — username: `demo` · password: `demo123`
 
+![Screenshot](Screenshot.jpg)
+
+
 > Note: the backend is hosted on a free tier and sleeps after inactivity, so the first request may take up to ~50 seconds to wake the server. Subsequent requests are fast.
 
 ## What it does
